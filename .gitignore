@@ -1,0 +1,29 @@
+# PlatformIO
+.pio/
+.vscode/
+.clang_complete
+.gcc-flags.json
+*.pyc
+
+# Build artifacts
+*.bin
+*.elf
+*.map
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local configuration
+platformio_override.ini
+secrets.h
+
+# Testing
+test_results/
+*.log

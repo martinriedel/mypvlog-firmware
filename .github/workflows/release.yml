@@ -1,0 +1,133 @@
+name: Release Firmware
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant:
+          - esp32-nrf24
+          - esp32-dual
+          - esp32s3-dual
+          - esp8266-nrf24
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+
+      - name: Build ${{ matrix.variant }}
+        run: pio run -e ${{ matrix.variant }}
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+          cp .pio/build/${{ matrix.variant }}/firmware.bin release/mypvlog-${{ matrix.variant }}-${{ github.ref_name }}.bin
+
+          # Generate SHA256 checksum
+          cd release
+          sha256sum mypvlog-${{ matrix.variant }}-${{ github.ref_name }}.bin > mypvlog-${{ matrix.variant }}-${{ github.ref_name }}.bin.sha256
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.variant }}
+          path: release/*
+
+  create-release:
+    needs: build-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release directory
+        run: |
+          mkdir -p release
+          find artifacts -name "*.bin" -exec cp {} release/ \;
+          find artifacts -name "*.sha256" -exec cp {} release/ \;
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## MyPVLog Firmware ${{ steps.version.outputs.VERSION }}
+
+          ### 🚀 Quick Flash
+
+          Use our web flasher (coming soon): [flash.mypvlog.net](https://flash.mypvlog.net)
+
+          ### 📦 Firmware Variants
+
+          Choose the correct firmware for your hardware:
+
+          | Download | Hardware | Use Case |
+          |----------|----------|----------|
+          | [esp32-nrf24](mypvlog-esp32-nrf24-${{ github.ref_name }}.bin) | ESP32 + NRF24L01+ | Hoymiles HM series only |
+          | [esp32-dual](mypvlog-esp32-dual-${{ github.ref_name }}.bin) | ESP32 + NRF24 + CMT2300A | Hoymiles HM + HMS/HMT ⭐ |
+          | [esp32s3-dual](mypvlog-esp32s3-dual-${{ github.ref_name }}.bin) | ESP32-S3 + NRF24 + CMT2300A | Latest hardware |
+          | [esp8266-nrf24](mypvlog-esp8266-nrf24-${{ github.ref_name }}.bin) | ESP8266 + NRF24L01+ | Budget option |
+
+          ### 📝 Manual Flash Instructions
+
+          **Using esptool.py:**
+          ```bash
+          pip install esptool
+          esptool.py --port /dev/ttyUSB0 write_flash 0x0 mypvlog-esp32-nrf24-${{ github.ref_name }}.bin
+          ```
+
+          **Using PlatformIO:**
+          ```bash
+          pio run -e esp32-nrf24 -t upload
+          ```
+
+          ### ✅ Checksum Verification
+
+          Verify your download with SHA256 checksums (*.sha256 files included).
+
+          ### 📖 Full Documentation
+
+          - [README](https://github.com/mypvlog/firmware#readme)
+          - [Setup Guide](https://docs.mypvlog.net) (coming soon)
+          - [Hardware Compatibility](https://github.com/mypvlog/firmware#-supported-hardware)
+
+          ### 🐛 Report Issues
+
+          Found a bug? [Open an issue](https://github.com/mypvlog/firmware/issues/new)
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

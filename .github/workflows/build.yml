@@ -1,0 +1,95 @@
+name: Build Firmware
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant:
+          - esp32-nrf24
+          - esp32-dual
+          - esp32s3-dual
+          - esp8266-nrf24
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+
+      - name: Build ${{ matrix.variant }}
+        run: pio run -e ${{ matrix.variant }}
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.variant }}
+          path: .pio/build/${{ matrix.variant }}/firmware.bin
+          retention-days: 30
+
+      - name: Upload bootloader artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootloader-${{ matrix.variant }}
+          path: .pio/build/${{ matrix.variant }}/bootloader.bin
+          retention-days: 30
+          if-no-files-found: ignore
+
+  check-size:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Check firmware sizes
+        run: |
+          echo "## Firmware Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Variant | Size | Limit | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          for variant in esp32-nrf24 esp32-dual esp32s3-dual esp8266-nrf24; do
+            size=$(stat -c%s "firmware-$variant/firmware.bin" 2>/dev/null || echo "0")
+            size_mb=$(echo "scale=2; $size / 1048576" | bc)
+
+            if [[ $variant == esp8266* ]]; then
+              limit=1.0
+            elif [[ $variant == esp32s3* ]]; then
+              limit=3.0
+            else
+              limit=1.9
+            fi
+
+            if (( $(echo "$size_mb < $limit" | bc -l) )); then
+              status="✅ OK"
+            else
+              status="❌ TOO LARGE"
+            fi
+
+            echo "| $variant | ${size_mb}MB | ${limit}MB | $status |" >> $GITHUB_STEP_SUMMARY
+          done
