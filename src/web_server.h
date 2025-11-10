@@ -13,14 +13,11 @@ public:
     void begin();
     void loop();
     void stop();
+    bool isStarted() { return m_started; }
 
 private:
+    bool m_started;
     void setupRoutes();
-    void handleRoot();
-    void handleSetup();
-    void handleConfig();
-    void handleStatus();
-    void handleNotFound();
 };
 
 #endif // WEB_SERVER_H
