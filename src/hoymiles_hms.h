@@ -1,5 +1,8 @@
 /**
  * Hoymiles HMS/HMT Protocol - CMT2300A Communication
+ *
+ * Supports HMS-800 to HMS-2000 and HMT series inverters
+ * Uses CMT2300A radio module (868MHz)
  */
 
 #ifndef HOYMILES_HMS_H
@@ -9,6 +12,18 @@
 #include <functional>
 
 #ifdef RADIO_CMT2300A
+
+#include "hoymiles_protocol.h"
+
+// Maximum number of inverters to manage
+#ifndef HOYMILES_MAX_INVERTERS
+#define HOYMILES_MAX_INVERTERS  8
+#endif
+
+// Default poll interval (milliseconds)
+#ifndef HOYMILES_POLL_INTERVAL
+#define HOYMILES_POLL_INTERVAL  5000
+#endif
 
 class HoymilesHMS {
 public:
@@ -31,6 +46,9 @@ private:
     unsigned long m_lastPoll;
     uint16_t m_pollInterval;
     uint8_t m_inverterCount;
+
+    // Inverter storage
+    uint64_t m_inverters[HOYMILES_MAX_INVERTERS];
 
     // Callback
     std::function<void(uint64_t serial, float power, float voltage, float current)> m_dataCallback;
