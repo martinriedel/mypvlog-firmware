@@ -32,6 +32,12 @@
 #define MYPVLOG_MQTT_BROKER "mqtt.mypvlog.net"
 #define MYPVLOG_MQTT_PORT 8883
 
+// SSL/TLS Configuration
+// Set to false to disable certificate validation (INSECURE - for testing only!)
+#ifndef MYPVLOG_SSL_VERIFY
+#define MYPVLOG_SSL_VERIFY true
+#endif
+
 // NRF24L01+ Pin Configuration (ESP32)
 #ifdef ESP32
     #define NRF24_CE_PIN 2

@@ -4,6 +4,7 @@
 
 #include "mypvlog_api.h"
 #include "config.h"
+#include "ssl_certificates.h"
 #include <ArduinoJson.h>
 
 #ifdef ESP32
@@ -271,10 +272,18 @@ String MypvlogAPI::makeGetRequest(const String& endpoint, const String& queryPar
 
 #ifdef ESP32
     WiFiClientSecure client;
-    client.setInsecure(); // TODO: Add certificate validation
+    #if MYPVLOG_SSL_VERIFY
+        client.setCACert(api_mypvlog_net_cert);
+    #else
+        client.setInsecure();
+    #endif
 #elif defined(ESP8266)
     std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
-    client->setInsecure(); // TODO: Add certificate validation
+    #if MYPVLOG_SSL_VERIFY
+        client->setCACert(api_mypvlog_net_cert);
+    #else
+        client->setInsecure();
+    #endif
 #endif
 
     HTTPClient http;
@@ -329,10 +338,18 @@ String MypvlogAPI::makePostRequest(const String& endpoint, const String& body, b
 
 #ifdef ESP32
     WiFiClientSecure client;
-    client.setInsecure(); // TODO: Add certificate validation
+    #if MYPVLOG_SSL_VERIFY
+        client.setCACert(api_mypvlog_net_cert);
+    #else
+        client.setInsecure();
+    #endif
 #elif defined(ESP8266)
     std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
-    client->setInsecure(); // TODO: Add certificate validation
+    #if MYPVLOG_SSL_VERIFY
+        client->setCACert(api_mypvlog_net_cert);
+    #else
+        client->setInsecure();
+    #endif
 #endif
 
     HTTPClient http;

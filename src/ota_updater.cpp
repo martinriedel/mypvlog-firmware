@@ -4,6 +4,7 @@
 
 #include "ota_updater.h"
 #include "config.h"
+#include "ssl_certificates.h"
 
 #ifdef ESP32
     #include <Update.h>
@@ -52,13 +53,25 @@ bool OTAUpdater::performUpdate(const String& downloadUrl,
 
     setStatus(OTAStatus::CHECKING, 0, "Checking update");
 
-    // Create HTTP client
+    // Create HTTP client with SSL
 #ifdef ESP32
     WiFiClientSecure client;
-    client.setInsecure(); // TODO: Add certificate validation
+    #if MYPVLOG_SSL_VERIFY
+        client.setCACert(api_mypvlog_net_cert);
+        DEBUG_PRINTLN("OTA: SSL certificate validation enabled");
+    #else
+        client.setInsecure();
+        DEBUG_PRINTLN("OTA: WARNING - SSL validation disabled (insecure!)");
+    #endif
 #elif defined(ESP8266)
     std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
-    client->setInsecure(); // TODO: Add certificate validation
+    #if MYPVLOG_SSL_VERIFY
+        client->setCACert(api_mypvlog_net_cert);
+        DEBUG_PRINTLN("OTA: SSL certificate validation enabled");
+    #else
+        client->setInsecure();
+        DEBUG_PRINTLN("OTA: WARNING - SSL validation disabled (insecure!)");
+    #endif
 #endif
 
     HTTPClient http;
