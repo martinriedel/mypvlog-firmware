@@ -1,0 +1,17 @@
+{
+  "name": "MyPVLog Firmware - ESP32-S3 Dual Radio",
+  "version": "1.0.0",
+  "home_assistant_domain": "mypvlog",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        {
+          "path": "https://github.com/martinriedel/mypvlog-firmware/releases/latest/download/mypvlog-esp32s3-dual.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

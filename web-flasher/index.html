@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyPVLog Firmware Flasher</title>
+    <meta name="description" content="Flash MyPVLog firmware to your ESP32/ESP8266 directly from your browser. No installation required.">
+    <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+    <style>
+        :root {
+            --primary-color: #f59e0b;
+            --primary-dark: #d97706;
+            --secondary-color: #3b82f6;
+            --success-color: #10b981;
+            --bg-color: #f9fafb;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .info-banner {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--secondary-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .info-banner h3 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        .info-banner ul {
+            margin-left: 20px;
+        }
+
+        .firmware-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .firmware-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .firmware-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-color: var(--primary-color);
+        }
+
+        .firmware-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            font-size: 1.5em;
+        }
+
+        .firmware-card .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .firmware-card .badge.recommended {
+            background: var(--success-color);
+        }
+
+        .firmware-card ul {
+            list-style: none;
+            margin: 16px 0;
+        }
+
+        .firmware-card ul li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        .firmware-card ul li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .firmware-card esp-web-install-button {
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        .firmware-card esp-web-install-button button {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .firmware-card esp-web-install-button button:hover {
+            background: var(--primary-dark);
+        }
+
+        .requirements {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .requirements h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .requirements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .requirement-item {
+            padding: 16px;
+            background: var(--bg-color);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .requirement-item h4 {
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .steps {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .steps h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .step {
+            padding: 16px;
+            margin: 12px 0;
+            background: var(--bg-color);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .step h4 {
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .firmware-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ MyPVLog Firmware Flasher</h1>
+            <p>Flash firmware to your ESP32/ESP8266 directly from your browser - no installation required!</p>
+        </header>
+
+        <div class="info-banner">
+            <h3>🚀 Browser-Based Flashing</h3>
+            <p>This tool uses WebSerial API to flash firmware directly to your ESP32/ESP8266. Works in Chrome, Edge, and Opera browsers.</p>
+            <ul>
+                <li>No software installation needed</li>
+                <li>Automatic driver detection</li>
+                <li>One-click flashing</li>
+                <li>Safe and secure</li>
+            </ul>
+        </div>
+
+        <div class="requirements">
+            <h2>📋 Requirements</h2>
+            <div class="requirements-grid">
+                <div class="requirement-item">
+                    <h4>Browser</h4>
+                    <p>Chrome, Edge, or Opera (WebSerial support required)</p>
+                </div>
+                <div class="requirement-item">
+                    <h4>Hardware</h4>
+                    <p>ESP32 or ESP8266 development board</p>
+                </div>
+                <div class="requirement-item">
+                    <h4>Cable</h4>
+                    <p>USB data cable (not just power)</p>
+                </div>
+                <div class="requirement-item">
+                    <h4>Radio Module</h4>
+                    <p>nRF24L01+ for Hoymiles HM series</p>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="text-align: center; margin: 40px 0 20px; color: var(--primary-color);">Choose Your Firmware</h2>
+
+        <div class="firmware-grid">
+            <!-- ESP32 + NRF24 -->
+            <div class="firmware-card">
+                <span class="badge recommended">⭐ Recommended</span>
+                <h3>ESP32 + NRF24</h3>
+                <p><strong>For:</strong> Hoymiles HM Series (300-1500W)</p>
+                <ul>
+                    <li>ESP32 DevKit v1 / WROOM-32</li>
+                    <li>nRF24L01+ radio module</li>
+                    <li>Most common setup</li>
+                    <li>Best performance</li>
+                </ul>
+                <esp-web-install-button
+                    manifest="./manifests/esp32-nrf24.json">
+                    <button slot="activate">Install ESP32 + NRF24</button>
+                </esp-web-install-button>
+            </div>
+
+            <!-- ESP32 + Dual Radio -->
+            <div class="firmware-card">
+                <span class="badge">Pro</span>
+                <h3>ESP32 Dual Radio</h3>
+                <p><strong>For:</strong> HM + HMS/HMT Series</p>
+                <ul>
+                    <li>ESP32 with both radios</li>
+                    <li>NRF24L01+ + CMT2300A</li>
+                    <li>Supports all Hoymiles models</li>
+                    <li>Advanced users</li>
+                </ul>
+                <esp-web-install-button
+                    manifest="./manifests/esp32-dual.json">
+                    <button slot="activate">Install ESP32 Dual</button>
+                </esp-web-install-button>
+            </div>
+
+            <!-- ESP32-S3 -->
+            <div class="firmware-card">
+                <span class="badge">Latest</span>
+                <h3>ESP32-S3 Dual Radio</h3>
+                <p><strong>For:</strong> Latest Hardware</p>
+                <ul>
+                    <li>ESP32-S3 DevKit</li>
+                    <li>More RAM and flash</li>
+                    <li>Better WiFi performance</li>
+                    <li>Future-proof</li>
+                </ul>
+                <esp-web-install-button
+                    manifest="./manifests/esp32s3-dual.json">
+                    <button slot="activate">Install ESP32-S3</button>
+                </esp-web-install-button>
+            </div>
+
+            <!-- ESP8266 -->
+            <div class="firmware-card">
+                <span class="badge">Budget</span>
+                <h3>ESP8266 + NRF24</h3>
+                <p><strong>For:</strong> Budget Builds</p>
+                <ul>
+                    <li>NodeMCU / Wemos D1 Mini</li>
+                    <li>Lower cost option</li>
+                    <li>HM series only</li>
+                    <li>Limited features</li>
+                </ul>
+                <esp-web-install-button
+                    manifest="./manifests/esp8266-nrf24.json">
+                    <button slot="activate">Install ESP8266</button>
+                </esp-web-install-button>
+            </div>
+        </div>
+
+        <div class="steps">
+            <h2>📝 How to Flash</h2>
+
+            <div class="step">
+                <h4>Step 1: Connect Your Board</h4>
+                <p>Connect your ESP32/ESP8266 to your computer using a USB cable.</p>
+            </div>
+
+            <div class="step">
+                <h4>Step 2: Select Firmware</h4>
+                <p>Choose the firmware variant that matches your hardware setup above.</p>
+            </div>
+
+            <div class="step">
+                <h4>Step 3: Click Install</h4>
+                <p>Click the "Install" button and select the serial port when prompted.</p>
+            </div>
+
+            <div class="step">
+                <h4>Step 4: Wait for Completion</h4>
+                <p>The firmware will be flashed automatically. This takes 1-2 minutes.</p>
+            </div>
+
+            <div class="step">
+                <h4>Step 5: Setup Your Device</h4>
+                <p>After flashing, connect to WiFi network "MyPVLog-XXXX" and open http://192.168.4.1 to configure.</p>
+            </div>
+        </div>
+
+        <div class="info-banner">
+            <h3>⚠️ Troubleshooting</h3>
+            <ul>
+                <li><strong>Port not detected?</strong> Install CP2102 or CH340 USB drivers</li>
+                <li><strong>Flash failed?</strong> Hold BOOT button, press RESET, release BOOT, try again</li>
+                <li><strong>Browser not supported?</strong> Use Chrome, Edge, or Opera</li>
+                <li><strong>Need help?</strong> <a href="https://github.com/martinriedel/mypvlog-firmware/issues" target="_blank">Open an issue on GitHub</a></li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>
+                <a href="https://github.com/martinriedel/mypvlog-firmware" target="_blank">GitHub</a> •
+                <a href="https://mypvlog.net" target="_blank">MyPVLog.net</a> •
+                <a href="https://github.com/martinriedel/mypvlog-firmware#readme" target="_blank">Documentation</a>
+            </p>
+            <p style="margin-top: 10px;">MyPVLog Firmware © 2025 | Open Source (MIT License)</p>
+        </footer>
+    </div>
+</body>
+</html>

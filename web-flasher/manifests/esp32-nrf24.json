@@ -1,0 +1,17 @@
+{
+  "name": "MyPVLog Firmware - ESP32 + NRF24",
+  "version": "1.0.0",
+  "home_assistant_domain": "mypvlog",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        {
+          "path": "https://github.com/martinriedel/mypvlog-firmware/releases/latest/download/mypvlog-esp32-nrf24.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}
