@@ -1,4 +1,4 @@
-# MyPVLog Firmware
+# mypvlog Firmware
 
 [![Build Firmware](https://github.com/mypvlog/firmware/actions/workflows/build.yml/badge.svg)](https://github.com/mypvlog/firmware/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -6,7 +6,7 @@
 
 **Easy-to-flash ESP32/ESP8266 firmware for Hoymiles solar inverter monitoring with direct mypvlog.net integration.**
 
-Flash your ESP32 in 2 minutes from your browser. Choose **Generic MQTT mode** for flexibility, or **MyPVLog Direct mode** for zero-config cloud integration.
+Flash your ESP32 in 2 minutes from your browser. Choose **Generic MQTT mode** for flexibility, or **mypvlog Direct mode** for zero-config cloud integration.
 
 ---
 
@@ -20,7 +20,7 @@ Flash your ESP32 in 2 minutes from your browser. Choose **Generic MQTT mode** fo
 - Self-hosted, full control
 - Perfect for Home Assistant, Node-RED, etc.
 
-**☁️ MyPVLog Direct Mode** (Optimized for mypvlog.net)
+**☁️ mypvlog Direct Mode** (Optimized for mypvlog.net)
 - **2-minute setup** with zero configuration
 - Automatic device registration
 - Cloud dashboard with historical data
@@ -29,7 +29,7 @@ Flash your ESP32 in 2 minutes from your browser. Choose **Generic MQTT mode** fo
 
 ### Performance
 
-| Feature | OpenDTU/AhoyDTU | MyPVLog Firmware |
+| Feature | OpenDTU/AhoyDTU | mypvlog Firmware |
 |---------|-----------------|------------------|
 | Setup time | 15-30 minutes | **2 minutes** (Direct mode) |
 | Poll interval | 5-15 seconds | **2-5 seconds** |
@@ -143,7 +143,7 @@ GND                 →    GND
 ### First Boot: Captive Portal
 
 1. **Power on** your ESP32/ESP8266
-2. **Connect** to WiFi AP: `MyPVLog-XXXXXX` (password: `mypvlog123`)
+2. **Connect** to WiFi AP: `mypvlog-XXXXXX` (password: `mypvlog123`)
 3. **Open browser** - Captive portal opens automatically (or go to http://192.168.4.1)
 4. **Choose your mode:**
 
@@ -165,7 +165,7 @@ Step 3: Inverter Discovery
 ✅ Setup complete! Data publishing to your MQTT broker.
 ```
 
-### MyPVLog Direct Mode Setup
+### mypvlog Direct Mode Setup
 
 ```
 Step 1: WiFi Configuration
@@ -209,7 +209,7 @@ Step 3: Automatic Provisioning
 
 ## 🎯 Feature Comparison
 
-| Feature | Generic MQTT | MyPVLog Direct |
+| Feature | Generic MQTT | mypvlog Direct |
 |---------|--------------|----------------|
 | Setup time | 5-10 minutes | **2 minutes** |
 | MQTT broker | User provides | Auto-configured |
@@ -285,7 +285,7 @@ firmware/
 │   ├── main.cpp           # Entry point
 │   ├── wifi_manager.*     # WiFi & captive portal
 │   ├── mqtt_generic.*     # Generic MQTT mode
-│   ├── mqtt_mypvlog.*     # MyPVLog Direct mode
+│   ├── mqtt_mypvlog.*     # mypvlog Direct mode
 │   ├── web_server.*       # Local web UI
 │   ├── hoymiles_hm.*      # Hoymiles HM protocol
 │   └── hoymiles_hms.*     # Hoymiles HMS/HMT protocol
@@ -383,13 +383,13 @@ A: Yes! In Generic MQTT mode, we use the same topic structure and protocol as Op
 A: Yes, you can change modes anytime from the web UI settings.
 
 **Q: Do I need a mypvlog.net account?**
-A: Only for MyPVLog Direct mode. Generic MQTT mode works standalone.
+A: Only for mypvlog Direct mode. Generic MQTT mode works standalone.
 
 **Q: Does this work offline?**
-A: Generic MQTT mode works completely offline. MyPVLog Direct mode requires internet for cloud features.
+A: Generic MQTT mode works completely offline. mypvlog Direct mode requires internet for cloud features.
 
 **Q: Is my data secure?**
-A: MyPVLog Direct mode uses SSL/TLS encryption. All credentials are stored encrypted on the device.
+A: mypvlog Direct mode uses SSL/TLS encryption. All credentials are stored encrypted on the device.
 
 **Q: Can I contribute to other inverter brands?**
 A: Absolutely! Check our [Contributing Guide](CONTRIBUTING.md) and open an issue to discuss.
@@ -399,7 +399,7 @@ A: Absolutely! Check our [Contributing Guide](CONTRIBUTING.md) and open an issue
 ## 📊 Status
 
 - ✅ **Generic MQTT Mode:** Production ready
-- 🚧 **MyPVLog Direct Mode:** In development (beta Q1 2026)
+- 🚧 **mypvlog Direct Mode:** In development (beta Q1 2026)
 - 🚧 **Web Flasher:** In development
 - 📅 **Multi-brand support:** Planned (Q2-Q4 2026)
 
