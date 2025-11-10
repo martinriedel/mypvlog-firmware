@@ -16,6 +16,7 @@
 #include "config_manager.h"
 #include "mqtt_client.h"
 #include "mypvlog_api.h"
+#include "ota_updater.h"
 
 #ifdef RADIO_NRF24
 #include "hoymiles_hm.h"
@@ -34,6 +35,7 @@ WebServer webServer;
 ConfigManager configManager;
 MqttClient mqttClient;
 MypvlogAPI mypvlogAPI;
+OTAUpdater otaUpdater;
 
 #ifdef RADIO_NRF24
 HoymilesHM hoymilesHM;
@@ -52,6 +54,28 @@ const unsigned long HEARTBEAT_INTERVAL = 60000; // 60 seconds
 
 unsigned long lastFirmwareCheck = 0;
 const unsigned long FIRMWARE_CHECK_INTERVAL = 3600000; // 1 hour
+
+bool updateInProgress = false;
+
+// ============================================
+// OTA Update Callback
+// ============================================
+
+void onOTAProgress(OTAStatus status, int progress, const String& message) {
+    // Log progress to serial
+    DEBUG_PRINT("OTA Update: ");
+    DEBUG_PRINT(message);
+    if (progress >= 0) {
+        DEBUG_PRINT(" (");
+        DEBUG_PRINT(progress);
+        DEBUG_PRINTLN("%)");
+    } else {
+        DEBUG_PRINTLN();
+    }
+
+    // TODO: Update web UI with progress
+    // Could be done via WebSocket or SSE
+}
 
 // ============================================
 // Inverter Data Callback
@@ -276,7 +300,21 @@ void setup() {
             Serial.println("  Update available!");
             Serial.print("  New version: ");
             Serial.println(updateInfo.version);
-            Serial.println("  Visit web interface to update");
+            Serial.println();
+            Serial.println("  Starting OTA update...");
+
+            // Trigger OTA update
+            bool updateSuccess = otaUpdater.performUpdate(
+                updateInfo.downloadUrl,
+                updateInfo.checksum,
+                onOTAProgress
+            );
+
+            if (!updateSuccess) {
+                Serial.print("  OTA update failed: ");
+                Serial.println(otaUpdater.getLastError());
+            }
+            // If successful, device will reboot
         } else {
             Serial.println("  Firmware is up to date");
         }
@@ -343,6 +381,7 @@ void loop() {
     // mypvlog Direct mode: Check for firmware updates periodically
     if (configManager.getMode() == OperationMode::MYPVLOG_DIRECT &&
         wifiManager.isConnected() &&
+        !updateInProgress &&
         millis() - lastFirmwareCheck >= FIRMWARE_CHECK_INTERVAL) {
 
         lastFirmwareCheck = millis();
@@ -364,8 +403,24 @@ void loop() {
         FirmwareUpdateInfo updateInfo = mypvlogAPI.checkFirmwareUpdate(VERSION, hardwareModel);
         if (updateInfo.updateAvailable) {
             DEBUG_PRINT("Firmware update available: ");
-            DEBUG_PRINTLN(updateInfo.version);
-            // TODO: Implement OTA update logic or notify user via web interface
+            DEBUG_PRINT(updateInfo.version);
+            DEBUG_PRINTLN(" - Starting OTA update...");
+
+            updateInProgress = true;
+
+            // Trigger OTA update
+            bool updateSuccess = otaUpdater.performUpdate(
+                updateInfo.downloadUrl,
+                updateInfo.checksum,
+                onOTAProgress
+            );
+
+            if (!updateSuccess) {
+                DEBUG_PRINT("OTA update failed: ");
+                DEBUG_PRINTLN(otaUpdater.getLastError());
+                updateInProgress = false;
+            }
+            // If successful, device will reboot
         }
     }
 
