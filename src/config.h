@@ -1,5 +1,5 @@
 /**
- * MyPVLog Firmware - Configuration
+ * mypvlog Firmware - Configuration
  */
 
 #ifndef CONFIG_H
@@ -11,7 +11,7 @@
 #endif
 
 // WiFi AP Configuration
-#define WIFI_AP_SSID_PREFIX "MyPVLog-"
+#define WIFI_AP_SSID_PREFIX "mypvlog-"
 #define WIFI_AP_PASSWORD "mypvlog123"
 #define WIFI_AP_CHANNEL 1
 #define WIFI_AP_MAX_CONNECTIONS 4
@@ -27,7 +27,7 @@
 #define MQTT_RECONNECT_INTERVAL 5000
 #define MQTT_MAX_RECONNECT_ATTEMPTS 10
 
-// MyPVLog.net Configuration
+// mypvlog.net Configuration
 #define MYPVLOG_API_URL "https://api.mypvlog.net"
 #define MYPVLOG_MQTT_BROKER "mqtt.mypvlog.net"
 #define MYPVLOG_MQTT_PORT 8883
@@ -59,7 +59,7 @@
 
 // Hoymiles Configuration
 #define HOYMILES_POLL_INTERVAL 5000     // Generic mode: 5 seconds
-#define HOYMILES_POLL_INTERVAL_FAST 2000 // MyPVLog Direct mode: 2 seconds
+#define HOYMILES_POLL_INTERVAL_FAST 2000 // mypvlog Direct mode: 2 seconds
 #define HOYMILES_MAX_INVERTERS 8
 #define HOYMILES_RETRY_ATTEMPTS 3
 #define HOYMILES_RESPONSE_TIMEOUT 1000

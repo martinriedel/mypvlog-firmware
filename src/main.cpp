@@ -1,11 +1,11 @@
 /**
- * MyPVLog Firmware - Main Entry Point
+ * mypvlog Firmware - Main Entry Point
  *
  * Dual-mode firmware for ESP32/ESP8266:
  * - Generic MQTT Mode: OpenDTU/AhoyDTU compatible
- * - MyPVLog Direct Mode: Cloud integration with mypvlog.net
+ * - mypvlog Direct Mode: Cloud integration with mypvlog.net
  *
- * Copyright (c) 2025 MyPVLog.net
+ * Copyright (c) 2025 mypvlog.net
  * Licensed under MIT License
  */
 
@@ -15,6 +15,7 @@
 #include "web_server.h"
 #include "config_manager.h"
 #include "mqtt_client.h"
+#include "mypvlog_api.h"
 
 #ifdef RADIO_NRF24
 #include "hoymiles_hm.h"
@@ -32,6 +33,7 @@ WiFiManager wifiManager;
 WebServer webServer;
 ConfigManager configManager;
 MqttClient mqttClient;
+MypvlogAPI mypvlogAPI;
 
 #ifdef RADIO_NRF24
 HoymilesHM hoymilesHM;
@@ -40,6 +42,16 @@ HoymilesHM hoymilesHM;
 #ifdef RADIO_CMT2300A
 HoymilesHMS hoymilesHMS;
 #endif
+
+// ============================================
+// Heartbeat Timer
+// ============================================
+
+unsigned long lastHeartbeat = 0;
+const unsigned long HEARTBEAT_INTERVAL = 60000; // 60 seconds
+
+unsigned long lastFirmwareCheck = 0;
+const unsigned long FIRMWARE_CHECK_INTERVAL = 3600000; // 1 hour
 
 // ============================================
 // Inverter Data Callback
@@ -90,7 +102,7 @@ void setup() {
 
     Serial.println();
     Serial.println("========================================");
-    Serial.println("  MyPVLog Firmware v" VERSION);
+    Serial.println("  mypvlog Firmware v" VERSION);
     Serial.println("  Build: " __DATE__ " " __TIME__);
     Serial.println("========================================");
 
@@ -124,13 +136,22 @@ void setup() {
             Serial.println("Generic MQTT");
             break;
         case OperationMode::MYPVLOG_DIRECT:
-            Serial.println("MyPVLog Direct");
+            Serial.println("mypvlog Direct");
             break;
         default:
             Serial.println("Not Configured (Setup Required)");
             break;
     }
     Serial.println();
+
+    // Initialize mypvlog API client (used in Direct mode)
+    if (mode == OperationMode::MYPVLOG_DIRECT) {
+        mypvlogAPI.begin(MYPVLOG_API_URL);
+        Serial.println("mypvlog API: Initialized");
+        Serial.print("  API URL: ");
+        Serial.println(MYPVLOG_API_URL);
+        Serial.println();
+    }
 
     // Step 2: Initialize WiFi Manager
     // Will create AP if no credentials saved, or connect to saved WiFi
@@ -144,7 +165,7 @@ void setup() {
         Serial.println("========================================");
         Serial.println("  SETUP MODE");
         Serial.println("========================================");
-        Serial.print("  Connect to WiFi: MyPVLog-");
+        Serial.print("  Connect to WiFi: mypvlog-");
         String mac = wifiManager.getMacAddress();
         mac.replace(":", "");
         Serial.println(mac.substring(mac.length() - 4));
@@ -231,6 +252,36 @@ void setup() {
     }
     #endif
 
+    // Check for firmware updates (mypvlog Direct mode only)
+    if (mode == OperationMode::MYPVLOG_DIRECT && wifiManager.isConnected()) {
+        Serial.println();
+        Serial.println("Checking for firmware updates...");
+
+        #ifdef ESP32
+            String hardwareModel = "esp32-";
+        #elif defined(ESP8266)
+            String hardwareModel = "esp8266-";
+        #endif
+
+        #ifdef RADIO_NRF24
+            hardwareModel += "nrf24";
+        #elif defined(RADIO_CMT2300A)
+            hardwareModel += "cmt2300a";
+        #else
+            hardwareModel += "dual";
+        #endif
+
+        FirmwareUpdateInfo updateInfo = mypvlogAPI.checkFirmwareUpdate(VERSION, hardwareModel);
+        if (updateInfo.updateAvailable) {
+            Serial.println("  Update available!");
+            Serial.print("  New version: ");
+            Serial.println(updateInfo.version);
+            Serial.println("  Visit web interface to update");
+        } else {
+            Serial.println("  Firmware is up to date");
+        }
+    }
+
     Serial.println();
     Serial.println("Initialization complete!");
     Serial.println();
@@ -264,6 +315,59 @@ void loop() {
         hoymilesHMS.loop();
     }
     #endif
+
+    // mypvlog Direct mode: Send heartbeat
+    if (configManager.getMode() == OperationMode::MYPVLOG_DIRECT &&
+        wifiManager.isConnected() &&
+        millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+
+        lastHeartbeat = millis();
+
+        MyPVLogConfig config = configManager.getMyPVLogConfig();
+
+        HeartbeatResponse response = mypvlogAPI.sendHeartbeat(
+            config.dtu_id,
+            config.mqtt_password,
+            millis() / 1000, // uptime in seconds
+            ESP.getFreeHeap(),
+            wifiManager.getRSSI(),
+            wifiManager.getIPAddress()
+        );
+
+        if (response.success && response.configChanged) {
+            DEBUG_PRINTLN("Config changed on server - device should re-provision");
+            // TODO: Implement re-provisioning logic
+        }
+    }
+
+    // mypvlog Direct mode: Check for firmware updates periodically
+    if (configManager.getMode() == OperationMode::MYPVLOG_DIRECT &&
+        wifiManager.isConnected() &&
+        millis() - lastFirmwareCheck >= FIRMWARE_CHECK_INTERVAL) {
+
+        lastFirmwareCheck = millis();
+
+        #ifdef ESP32
+            String hardwareModel = "esp32-";
+        #elif defined(ESP8266)
+            String hardwareModel = "esp8266-";
+        #endif
+
+        #ifdef RADIO_NRF24
+            hardwareModel += "nrf24";
+        #elif defined(RADIO_CMT2300A)
+            hardwareModel += "cmt2300a";
+        #else
+            hardwareModel += "dual";
+        #endif
+
+        FirmwareUpdateInfo updateInfo = mypvlogAPI.checkFirmwareUpdate(VERSION, hardwareModel);
+        if (updateInfo.updateAvailable) {
+            DEBUG_PRINT("Firmware update available: ");
+            DEBUG_PRINTLN(updateInfo.version);
+            // TODO: Implement OTA update logic or notify user via web interface
+        }
+    }
 
     // Small delay to prevent watchdog triggers
     delay(10);
