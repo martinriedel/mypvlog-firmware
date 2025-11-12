@@ -1,7 +1,12 @@
 /**
  * Hoymiles HMS/HMT Protocol - CMT2300A Communication
  *
- * Supports HMS-800 to HMS-2000 and HMT series inverters
+ * Supports:
+ * - Hoymiles HMS-300, HMS-350, HMS-400, HMS-500, HMS-600, HMS-700, HMS-800
+ * - Hoymiles HMS-900, HMS-1000, HMS-1600, HMS-1800, HMS-2000
+ * - Hoymiles HMT-1600, HMT-1800, HMT-2000, HMT-2250
+ * - TSUN inverters with CMT2300A (if applicable, serial starting with "11")
+ *
  * Uses CMT2300A radio module (868MHz)
  */
 

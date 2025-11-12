@@ -26,6 +26,10 @@
 #include "hoymiles_hms.h"
 #endif
 
+#ifdef APSYSTEMS_ECU
+#include "apsystems_ecu.h"
+#endif
+
 // ============================================
 // Global Instances
 // ============================================
@@ -43,6 +47,10 @@ HoymilesHM hoymilesHM;
 
 #ifdef RADIO_CMT2300A
 HoymilesHMS hoymilesHMS;
+#endif
+
+#ifdef APSYSTEMS_ECU
+APSystemsECU apSystemsECU;
 #endif
 
 // ============================================
@@ -78,9 +86,10 @@ void onOTAProgress(OTAStatus status, int progress, const String& message) {
 }
 
 // ============================================
-// Inverter Data Callback
+// Inverter Data Callbacks
 // ============================================
 
+// Hoymiles/TSUN callback
 void onInverterData(uint64_t serial, float power, float voltage, float current) {
     DEBUG_PRINT("Inverter ");
     DEBUG_PRINT((unsigned long)serial);
@@ -115,6 +124,68 @@ void onInverterData(uint64_t serial, float power, float voltage, float current) 
     }
 }
 
+#ifdef APSYSTEMS_ECU
+// APSystems callback - converts multi-channel data to MQTT
+void onAPSystemsData(const char* uid, const APSystemsInverterData& data) {
+    DEBUG_PRINT("APSystems Inverter ");
+    DEBUG_PRINT(uid);
+    DEBUG_PRINT(": ");
+
+    // Calculate total power and average voltage
+    float totalPower = 0.0;
+    float totalVoltage = 0.0;
+    for (uint8_t i = 0; i < data.channelCount; i++) {
+        totalPower += data.power[i];
+        totalVoltage += data.voltage[i];
+    }
+    float avgVoltage = (data.channelCount > 0) ? (totalVoltage / data.channelCount) : 0.0;
+    float avgCurrent = (avgVoltage > 0) ? (totalPower / avgVoltage) : 0.0;
+
+    DEBUG_PRINT("Online=");
+    DEBUG_PRINT(data.online ? "yes" : "no");
+    DEBUG_PRINT(", Power=");
+    DEBUG_PRINT(totalPower);
+    DEBUG_PRINT("W, Temp=");
+    DEBUG_PRINT(data.temperature);
+    DEBUG_PRINTLN("°C");
+
+    // Publish to MQTT if connected
+    if (mqttClient.isConnected() && data.online) {
+        String topic;
+        OperationMode mode = configManager.getMode();
+
+        if (mode == OperationMode::GENERIC_MQTT) {
+            MqttConfig config = configManager.getMqttConfig();
+            topic = config.topic_prefix + "/" + wifiManager.getMacAddress() + "/" + String(uid);
+        } else if (mode == OperationMode::MYPVLOG_DIRECT) {
+            MyPVLogConfig config = configManager.getMyPVLogConfig();
+            topic = "opendtu/" + config.dtu_id + "/" + String(uid);
+        }
+
+        if (topic.length() > 0) {
+            // Main data payload
+            String payload = "{\"power\":" + String(totalPower) +
+                           ",\"voltage\":" + String(avgVoltage) +
+                           ",\"current\":" + String(avgCurrent) +
+                           ",\"temperature\":" + String(data.temperature) +
+                           ",\"frequency\":" + String(data.frequency) +
+                           ",\"signal\":" + String(data.signalStrength);
+
+            // Add per-channel data
+            payload += ",\"channels\":[";
+            for (uint8_t i = 0; i < data.channelCount; i++) {
+                if (i > 0) payload += ",";
+                payload += "{\"power\":" + String(data.power[i]) +
+                          ",\"voltage\":" + String(data.voltage[i]) + "}";
+            }
+            payload += "]}";
+
+            mqttClient.publish(topic + "/data", payload);
+        }
+    }
+}
+#endif
+
 // ============================================
 // Setup Function
 // ============================================
@@ -141,11 +212,15 @@ void setup() {
 
     // Display radio configuration
     #ifdef RADIO_NRF24
-    Serial.println("Radio: NRF24L01+ (Hoymiles HM)");
+    Serial.println("Radio: NRF24L01+ (Hoymiles HM/TSUN)");
     #endif
 
     #ifdef RADIO_CMT2300A
     Serial.println("Radio: CMT2300A (Hoymiles HMS/HMT)");
+    #endif
+
+    #ifdef APSYSTEMS_ECU
+    Serial.println("Manufacturer: APSystems (ECU Gateway)");
     #endif
 
     Serial.println();
@@ -276,6 +351,35 @@ void setup() {
     }
     #endif
 
+    // Step 6: Initialize APSystems ECU (if configured)
+    #ifdef APSYSTEMS_ECU
+    if (configManager.isConfigured()) {
+        Serial.println();
+
+        // TODO: Get ECU IP from configuration
+        // For now, using a placeholder - this would come from config
+        const char* ecuIP = "192.168.1.100";  // Default - should be configured via web UI
+
+        if (apSystemsECU.begin(ecuIP)) {
+            apSystemsECU.setDataCallback(onAPSystemsData);
+
+            // Set poll interval based on mode
+            if (mode == OperationMode::MYPVLOG_DIRECT) {
+                apSystemsECU.setPollInterval(HOYMILES_POLL_INTERVAL_FAST);
+            }
+
+            Serial.println("APSystems ECU: Ready");
+            Serial.print("  ECU ID: ");
+            Serial.println(apSystemsECU.getECUID());
+            Serial.print("  Inverters: ");
+            Serial.println(apSystemsECU.getInverterCount());
+        } else {
+            Serial.println("APSystems ECU: Failed to initialize");
+            Serial.println("  Check ECU IP address in configuration");
+        }
+    }
+    #endif
+
     // Check for firmware updates (mypvlog Direct mode only)
     if (mode == OperationMode::MYPVLOG_DIRECT && wifiManager.isConnected()) {
         Serial.println();
@@ -351,6 +455,12 @@ void loop() {
     #ifdef RADIO_CMT2300A
     if (configManager.isConfigured()) {
         hoymilesHMS.loop();
+    }
+    #endif
+
+    #ifdef APSYSTEMS_ECU
+    if (configManager.isConfigured()) {
+        apSystemsECU.loop();
     }
     #endif
 

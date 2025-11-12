@@ -63,12 +63,19 @@
     // Shares SPI bus with NRF24
 #endif
 
-// Hoymiles Configuration
+// Hoymiles/TSUN Configuration
 #define HOYMILES_POLL_INTERVAL 5000     // Generic mode: 5 seconds
 #define HOYMILES_POLL_INTERVAL_FAST 2000 // mypvlog Direct mode: 2 seconds
 #define HOYMILES_MAX_INVERTERS 8
 #define HOYMILES_RETRY_ATTEMPTS 3
 #define HOYMILES_RESPONSE_TIMEOUT 1000
+
+// APSystems ECU Configuration
+#define APSYSTEMS_ECU_PORT 8899
+#define APSYSTEMS_ECU_DEFAULT_IP "192.168.1.100"
+#define APSYSTEMS_POLL_INTERVAL 5000
+#define APSYSTEMS_MAX_INVERTERS 8
+#define APSYSTEMS_SOCKET_TIMEOUT 10000
 
 // LED Configuration
 #ifdef ESP32

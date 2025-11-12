@@ -1,5 +1,11 @@
 /**
  * Hoymiles HM Protocol - NRF24L01+ Communication
+ *
+ * Supports:
+ * - Hoymiles HM-300, HM-350, HM-400, HM-600, HM-700, HM-800, HM-1000, HM-1200, HM-1500
+ * - TSUN TSOL-M350, TSOL-M800, TSOL-M1600 (serial numbers starting with "11")
+ *
+ * Note: These inverters use the same NRF24L01+ radio protocol (2.4 GHz)
  */
 
 #ifndef HOYMILES_HM_H

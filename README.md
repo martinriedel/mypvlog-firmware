@@ -4,9 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Community-orange)](https://platformio.org)
 
-**Easy-to-flash ESP32/ESP8266 firmware for Hoymiles solar inverter monitoring with direct mypvlog.net integration.**
+**Easy-to-flash ESP32/ESP8266 firmware for solar inverter monitoring with direct mypvlog.net integration.**
 
-Flash your ESP32 in 2 minutes from your browser. Choose **Generic MQTT mode** for flexibility, or **mypvlog Direct mode** for zero-config cloud integration.
+Supports **Hoymiles, TSUN, and APSystems** inverters. Flash your ESP32 in 2 minutes from your browser. Choose **Generic MQTT mode** for flexibility, or **mypvlog Direct mode** for zero-config cloud integration.
 
 ---
 
@@ -194,13 +194,17 @@ Step 3: Automatic Provisioning
 |-------|--------|----------|--------|
 | **Hoymiles** | HM-300 to HM-1500 | NRF24L01+ | ✅ Full support |
 | **Hoymiles** | HMS-800 to HMS-2000 | CMT2300A | ✅ Full support |
-| **Hoymiles** | HMT-1800, HMT-2250 | CMT2300A | ✅ Full support |
+| **Hoymiles** | HMT-1600 to HMT-2250 | CMT2300A | ✅ Full support |
+| **TSUN** | TSOL-M350, M800, M1600 (serial starting with "11") | NRF24L01+ | ✅ Full support |
+| **APSystems** | YC600, YC1000, QT2 | ECU Gateway (TCP) | ✅ Full support |
+| **APSystems** | QS1, DS3 | ECU Gateway (TCP) | ✅ Full support |
+
+**Note:** TSUN inverters use the same protocol as Hoymiles HM series. APSystems requires an ECU-B/ECU-R/ECU-C gateway device on your local network.
 
 ### Planned Support (Roadmap)
 
 | Brand | Models | Protocol | ETA |
 |-------|--------|----------|-----|
-| **APsystems** | EZ1, QS1 | Local API / Modbus | Q2 2026 |
 | **SolarEdge** | All inverters | Modbus RTU/TCP | Q3 2026 |
 | **Enphase** | IQ7, IQ8 | Local API | Q3 2026 |
 | **Deye/Sunsynk** | All hybrid | Modbus RTU | Q4 2026 |
@@ -235,12 +239,18 @@ Step 3: Automatic Provisioning
 
 We provide pre-built firmware for different hardware configurations:
 
-| Variant | Platform | Radio | Size | Use Case |
-|---------|----------|-------|------|----------|
-| `esp32-nrf24` | ESP32 | NRF24L01+ | 1.2MB | **HM series only** ⭐ Most common |
+| Variant | Platform | Radio/Comm | Size | Use Case |
+|---------|----------|------------|------|----------|
+| `esp32-nrf24` | ESP32 | NRF24L01+ | 1.2MB | **Hoymiles HM / TSUN** ⭐ Most common |
 | `esp32-dual` | ESP32 | NRF24 + CMT2300A | 1.4MB | **HM + HMS/HMT** ⭐ Recommended |
 | `esp32s3-dual` | ESP32-S3 | NRF24 + CMT2300A | 1.5MB | Latest hardware, fastest |
 | `esp8266-nrf24` | ESP8266 | NRF24L01+ | 900KB | Budget option (limited features) |
+| `esp32-apsystems` | ESP32 | WiFi/TCP | 1.1MB | **APSystems ECU Gateway** |
+
+**Notes:**
+- **Hoymiles HM & TSUN**: Use `esp32-nrf24` or `esp32-dual` variants
+- **Hoymiles HMS/HMT**: Use `esp32-dual` or `esp32s3-dual` variants
+- **APSystems**: Use `esp32-apsystems` variant (requires ECU-R/ECU-C on LAN)
 
 Download from [Releases](https://github.com/mypvlog/firmware/releases/latest).
 
@@ -287,8 +297,10 @@ firmware/
 │   ├── mqtt_generic.*     # Generic MQTT mode
 │   ├── mqtt_mypvlog.*     # mypvlog Direct mode
 │   ├── web_server.*       # Local web UI
-│   ├── hoymiles_hm.*      # Hoymiles HM protocol
-│   └── hoymiles_hms.*     # Hoymiles HMS/HMT protocol
+│   ├── hoymiles_hm.*      # Hoymiles HM / TSUN protocol (NRF24)
+│   ├── hoymiles_hms.*     # Hoymiles HMS/HMT protocol (CMT2300A)
+│   ├── hoymiles_protocol.h # Shared Hoymiles protocol utilities
+│   └── apsystems_ecu.*    # APSystems ECU client (TCP)
 ├── lib/                   # Custom libraries
 │   ├── RF24/              # NRF24 driver
 │   └── CMT2300A/          # CMT2300A driver
